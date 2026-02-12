@@ -1,58 +1,29 @@
 ﻿using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using SPOTIFY.Data;
-using SPOTIFY.Models;
 
 namespace SPOTIFY.Services;
 
 public class LocaleProvider
 {
-    private readonly AppDbContext _db;
-    private readonly IWebHostEnvironment _env;
+    // wwwroot/locales/en-US.json, de-DE.json
+    private readonly string _localesDir;
 
-    public LocaleProvider(AppDbContext db, IWebHostEnvironment env)
+    public LocaleProvider(IWebHostEnvironment env)
     {
-        _db = db;
-        _env = env;
-    }
-
-    public async Task EnsureSeededAsync()
-    {
-        if (await _db.LocaleEntries.AnyAsync())
-            return;
-
-        var localesPath = Path.Combine(_env.WebRootPath, "locales");
-        foreach (var file in Directory.GetFiles(localesPath, "*.json"))
-        {
-            var locale = Path.GetFileNameWithoutExtension(file);
-            var json = await File.ReadAllTextAsync(file);
-            var dict = JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? new();
-
-            foreach (var (kind, arr) in dict)
-            {
-                foreach (var val in arr)
-                {
-                    _db.LocaleEntries.Add(new LocaleEntry
-                    {
-                        Locale = locale,
-                        Kind = kind,
-                        Value = val
-                    });
-                }
-            }
-        }
-
-        await _db.SaveChangesAsync();
+        _localesDir = Path.Combine(env.WebRootPath, "locales");
     }
 
     public async Task<Dictionary<string, List<string>>> GetLocaleAsync(string locale)
     {
-        var items = await _db.LocaleEntries
-            .Where(x => x.Locale == locale)
-            .ToListAsync();
+        locale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale;
 
-        return items
-            .GroupBy(x => x.Kind)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.Value).ToList());
+        // fallback: en-US
+        var path = Path.Combine(_localesDir, $"{locale}.json");
+        if (!File.Exists(path))
+            path = Path.Combine(_localesDir, "en-US.json");
+
+        var json = await File.ReadAllTextAsync(path);
+        var dict = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
+
+        return dict ?? new Dictionary<string, List<string>>();
     }
 }
