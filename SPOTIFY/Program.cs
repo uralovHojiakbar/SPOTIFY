@@ -4,10 +4,23 @@ using SPOTIFY.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 builder.Services.AddControllersWithViews();
 
+var pgCs = builder.Configuration.GetConnectionString("Pg");
+if (string.IsNullOrWhiteSpace(pgCs))
+{
+    throw new Exception(
+        "Missing connection string 'ConnectionStrings:Pg'. " +
+        "On Render set Environment Variable: ConnectionStrings__Pg"
+    );
+}
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Pg"),
+    opt.UseNpgsql(pgCs,
         b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
               .MigrationsHistoryTable("__efmigrations_history", "public")
     )
@@ -29,13 +42,9 @@ using (var scope = app.Services.CreateScope())
     await loc.EnsureSeededAsync();
 }
 
-
 app.UseStaticFiles();
 
 app.UseRouting();
-
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 app.MapControllers();
 
