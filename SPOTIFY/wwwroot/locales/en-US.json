@@ -1,0 +1,8 @@
+﻿{
+  "genre": [ "Pop", "Rock", "Hip-Hop", "Jazz", "Electronic", "Indie", "Classical", "R&B" ],
+  "adjective": [ "Neon", "Silent", "Golden", "Midnight", "Wild", "Electric", "Broken", "Crystal" ],
+  "noun": [ "City", "Heart", "Road", "Sky", "Dream", "Shadow", "Fire", "Ocean" ],
+  "bandWord": [ "Collective", "Society", "Project", "Club", "Orchestra", "Crew" ],
+  "firstName": [ "James", "Emily", "Oliver", "Sophia", "Mason", "Ava", "Noah", "Mia" ],
+  "lastName": [ "Carter", "Turner", "Bennett", "Collins", "Reed", "Parker", "Morgan", "Hayes" ]
+}

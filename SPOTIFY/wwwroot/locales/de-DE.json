@@ -1,0 +1,8 @@
+﻿{
+  "genre": [ "Pop", "Rock", "Hip-Hop", "Jazz", "Elektronik", "Indie", "Klassik", "R&B" ],
+  "adjective": [ "Neon", "Stille", "Goldene", "Mitternacht", "Wilde", "Elektrische", "Gebrochene", "Kristall" ],
+  "noun": [ "Stadt", "Herz", "Weg", "Himmel", "Traum", "Schatten", "Feuer", "Ozean" ],
+  "bandWord": [ "Kollektiv", "Gesellschaft", "Projekt", "Club", "Orchester", "Crew" ],
+  "firstName": [ "Lukas", "Emilia", "Finn", "Sophie", "Paul", "Mia", "Noah", "Lea" ],
+  "lastName": [ "Schmidt", "Meyer", "Weber", "Fischer", "Wagner", "Becker", "Hoffmann", "Koch" ]
+}
