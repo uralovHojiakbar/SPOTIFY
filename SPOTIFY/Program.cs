@@ -8,7 +8,6 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 builder.Services.AddControllersWithViews();
 
-// ✅ DB yo‘q: Locale JSON’dan o‘qiydi
 builder.Services.AddSingleton<LocaleProvider>();
 
 // generator

@@ -46,7 +46,10 @@ function fmtTime(sec) {
 async function fetchPage(page) {
     const url = `/api/songs/page?locale=${encodeURIComponent(state.locale)}&seed=${state.seed}&page=${page}&pageSize=${state.pageSize}&avgLikes=${state.avgLikes}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error("API error");
+    if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`API error ${res.status}: ${txt}`);
+    }
     return await res.json();
 }
 
@@ -58,15 +61,20 @@ function resetOnParamsChange() {
     window.scrollTo({ top: 0, behavior: "instant" });
 }
 
+// ✅ error ko‘rsatsin
 const refresh = debounce(async () => {
-    if (state.mode === "table") {
-        const data = await fetchPage(state.tablePage);
-        renderTable(data);
-    } else {
-        content.innerHTML = `<div class="gallery" id="gallery"></div><div id="sentinel" style="height:1px"></div>`;
-        state.galleryPage = 1;
-        await loadMoreGallery();
-        setupInfiniteScroll();
+    try {
+        if (state.mode === "table") {
+            const data = await fetchPage(state.tablePage);
+            renderTable(data);
+        } else {
+            content.innerHTML = `<div class="gallery" id="gallery"></div><div id="sentinel" style="height:1px"></div>`;
+            state.galleryPage = 1;
+            await loadMoreGallery();
+            setupInfiniteScroll();
+        }
+    } catch (err) {
+        content.innerHTML = `<div style="color:red;padding:16px;">${escapeHtml(err?.message || String(err))}</div>`;
     }
 }, 120);
 
@@ -131,7 +139,7 @@ function renderPager() {
 }
 
 function renderTable(data) {
-    const rows = data.items.map(item => {
+    const rows = (data.items || []).map(item => {
         const isExpanded = state.expandedIndex === item.index;
         const arrow = isExpanded ? "▴" : "▾";
 
@@ -147,12 +155,10 @@ function renderTable(data) {
       <tr class="data-row" data-idx="${item.index}">
         <td class="col-arrow">${arrow}</td>
         <td class="col-num">${item.index}</td>
-        <td>
-          <div class="song-title">${item.title}</div>
-        </td>
-        <td>${item.artist}</td>
-        <td>${item.album}</td>
-        <td>${item.genre}</td>
+        <td><div class="song-title">${escapeHtml(item.title)}</div></td>
+        <td>${escapeHtml(item.artist)}</td>
+        <td>${escapeHtml(item.album)}</td>
+        <td>${escapeHtml(item.genre)}</td>
       </tr>
       ${details}
     `;
@@ -183,10 +189,6 @@ function renderTable(data) {
             state.expandedIndex = (state.expandedIndex === idx) ? null : idx;
             state.expandedTab = "lyrics";
             renderTable(data);
-            if (state.expandedIndex) {
-                const el = content.querySelector(`tbody tr.data-row[data-idx="${idx}"]`);
-                if (el) el.scrollIntoView({ block: "nearest" });
-            }
         });
     });
 
@@ -198,6 +200,7 @@ function renderTable(data) {
             refresh();
         });
     });
+
     content.querySelectorAll(".page-btn[data-act]").forEach(btn => {
         btn.addEventListener("click", () => {
             const act = btn.getAttribute("data-act");
@@ -208,6 +211,7 @@ function renderTable(data) {
         });
     });
 
+    // tabs
     content.querySelectorAll("[data-tab]").forEach(btn => {
         btn.addEventListener("click", () => {
             state.expandedTab = btn.getAttribute("data-tab");
@@ -271,7 +275,7 @@ async function loadMoreGallery() {
     const data = await fetchPage(state.galleryPage);
     const gallery = document.getElementById("gallery");
 
-    data.items.forEach(item => {
+    (data.items || []).forEach(item => {
         const div = document.createElement("div");
         div.className = "card";
         div.innerHTML = `
@@ -305,5 +309,5 @@ async function init() {
 }
 
 init().catch(err => {
-    content.innerHTML = `<div style="color:red;">Error: ${err.message}</div>`;
+    content.innerHTML = `<div style="color:red;padding:16px;">Error: ${escapeHtml(err.message)}</div>`;
 });

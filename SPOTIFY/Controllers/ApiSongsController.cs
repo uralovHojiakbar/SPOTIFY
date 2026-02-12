@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SPOTIFY.Services;
 using SPOTIFY.Models;
+using SPOTIFY.Services;
 
 namespace SPOTIFY.Controllers;
 
@@ -54,36 +54,32 @@ public class ApiSongsController : ControllerBase
         index = Math.Max(1, index);
         seconds = Math.Clamp(seconds, 6, 30);
 
-        
-        string audioDir = Path.Combine(_env.WebRootPath, "audio");
+        var audioDir = Path.Combine(_env.WebRootPath, "audio");
 
         if (Directory.Exists(audioDir))
         {
-     
             var files = Directory.EnumerateFiles(audioDir, "*.*", SearchOption.TopDirectoryOnly)
                 .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
                             f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(f => f) 
+                .OrderBy(f => f)
                 .ToList();
 
             if (files.Count > 0)
             {
-   
-                int i = ((index - 1) % files.Count);
+                int i = (index - 1) % files.Count;
                 string filePath = files[i];
 
-                string contentType =
-                    filePath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ? "audio/mpeg" :
-                    "audio/wav";
+                string contentType = filePath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                    ? "audio/mpeg"
+                    : "audio/wav";
 
-             
                 return PhysicalFile(filePath, contentType);
             }
         }
 
+        // fallback: generatsiya WAV
         ulong combined = seed ^ (ulong)index * 11400714819323198485UL;
         int audioSeed = unchecked((int)(combined ^ (combined >> 32)));
-
         var wav = AudioPreviewGenerator.GenerateWav(audioSeed, seconds: seconds);
         return File(wav, "audio/wav");
     }
