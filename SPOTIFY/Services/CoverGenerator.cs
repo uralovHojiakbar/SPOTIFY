@@ -1,4 +1,4 @@
-﻿using SkiaSharp;
+﻿using System.Text;
 
 namespace SPOTIFY.Services;
 
@@ -6,74 +6,42 @@ public static class CoverGenerator
 {
     public static string GenerateCoverDataUrl(string title, string artist, int w, int h, int seed)
     {
-        using var bmp = new SKBitmap(w, h);
-        using var canvas = new SKCanvas(bmp);
-
+        // seed’dan ranglar
         var rng = new Random(seed);
+        string bg1 = $"rgb({rng.Next(30, 230)},{rng.Next(30, 230)},{rng.Next(30, 230)})";
+        string bg2 = $"rgb({rng.Next(30, 230)},{rng.Next(30, 230)},{rng.Next(30, 230)})";
 
-      
-        canvas.Clear(new SKColor((byte)rng.Next(10, 245), (byte)rng.Next(10, 245), (byte)rng.Next(10, 245)));
-        using var paint = new SKPaint { IsAntialias = true };
+        // matnlar (SVG safe)
+        string t = Escape(title);
+        string a = Escape(artist);
 
-        for (int i = 0; i < 12; i++)
-        {
-            paint.Color = new SKColor((byte)rng.Next(10, 245), (byte)rng.Next(10, 245), (byte)rng.Next(10, 245), (byte)rng.Next(80, 160));
-            var x = rng.Next(-50, w);
-            var y = rng.Next(-50, h);
-            var rw = rng.Next(60, 220);
-            var rh = rng.Next(60, 220);
-            canvas.DrawRoundRect(new SKRect(x, y, x + rw, y + rh), 18, 18, paint);
-        }
+        string svg = $@"
+<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {w} {h}'>
+  <defs>
+    <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0' stop-color='{bg1}'/>
+      <stop offset='1' stop-color='{bg2}'/>
+    </linearGradient>
+  </defs>
+  <rect width='100%' height='100%' fill='url(#g)'/>
+  <circle cx='{w * 0.75}' cy='{h * 0.25}' r='{Math.Min(w, h) * 0.18}' fill='rgba(255,255,255,0.20)'/>
+  <circle cx='{w * 0.25}' cy='{h * 0.75}' r='{Math.Min(w, h) * 0.22}' fill='rgba(0,0,0,0.12)'/>
 
-   
-        using var textPaint = new SKPaint
-        {
-            Color = SKColors.White,
-            IsAntialias = true,
-            TextSize = 34,
-            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
-        };
+  <text x='32' y='{h - 110}' font-family='Arial, sans-serif' font-size='28' fill='white' opacity='0.95'>
+    {t}
+  </text>
+  <text x='32' y='{h - 70}' font-family='Arial, sans-serif' font-size='20' fill='white' opacity='0.85'>
+    {a}
+  </text>
+  <text x='32' y='{h - 35}' font-family='Arial, sans-serif' font-size='14' fill='white' opacity='0.70'>
+    SPOTIFY • {seed}
+  </text>
+</svg>";
 
-  
-        var titleLines = SplitToLines(title, 18);
-        float ty = 70;
-        foreach (var line in titleLines)
-        {
-            canvas.DrawText(line, 30, ty, textPaint);
-            ty += 42;
-        }
-
-        textPaint.TextSize = 24;
-        textPaint.Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal);
-        canvas.DrawText(artist, 30, h - 40, textPaint);
-
-        using var image = SKImage.FromBitmap(bmp);
-        using var data = image.Encode(SKEncodedImageFormat.Png, 90);
-        var b64 = Convert.ToBase64String(data.ToArray());
-        return $"data:image/png;base64,{b64}";
+        string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg));
+        return "data:image/svg+xml;base64," + base64;
     }
 
-    private static IEnumerable<string> SplitToLines(string text, int maxLen)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return new[] { "" };
-
-        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var lines = new List<string>();
-        var cur = "";
-
-        foreach (var w in words)
-        {
-            var candidate = string.IsNullOrEmpty(cur) ? w : cur + " " + w;
-            if (candidate.Length > maxLen)
-            {
-                lines.Add(cur);
-                cur = w;
-            }
-            else cur = candidate;
-        }
-
-        if (!string.IsNullOrEmpty(cur)) lines.Add(cur);
-        return lines;
-    }
+    private static string Escape(string s)
+        => (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 }
-
